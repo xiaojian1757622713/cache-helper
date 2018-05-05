@@ -17,6 +17,7 @@ import java.util.Map.Entry;
 import java.util.ResourceBundle;
 import java.util.Set;
 
+import com.hty.util.cachehelper.bean.JedisConfigBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
@@ -68,7 +69,7 @@ public class JedisHelperImpl implements JedisCacheHelper {
 
 	private JedisPool pool;
 
-	private ResourceBundle bundle;
+	private JedisConfigBean jedisConfigBean;
 
 	/**
 	 * 用于事务模式
@@ -107,48 +108,39 @@ public class JedisHelperImpl implements JedisCacheHelper {
 	 */
 	private static final Integer MODE_PLAIN = 4;
 	//初始化JedisPool连接池
-	private void initJedisPool() {
+	private void initJedisPool(JedisConfigBean jedisConfigBean) {
+	    this.jedisConfigBean  =jedisConfigBean;
 		logger.debug("Initial JedisPool...");
-		bundle = ResourceBundle.getBundle("redis");
-	    if (bundle == null) {
-		throw new IllegalArgumentException(
-			"[redis.properties] is not found!");
-	    }
-	    logger.debug("redis.pool.maxActive = {}", Integer.valueOf(bundle.getString("redis.pool.maxActive")));
-	    logger.debug("redis.pool.maxIdle = {}", Integer.valueOf(bundle.getString("redis.pool.maxIdle")));
-	    logger.debug("redis.pool.maxWait = {}", Long.valueOf(bundle.getString("redis.pool.maxWait")));
-	    logger.debug("redis.pool.testOnBorrow = {}", Boolean.valueOf(bundle.getString("redis.pool.testOnBorrow")));
-	    logger.debug("redis.pool.testOnReturn = {}", Boolean.valueOf(bundle.getString("redis.pool.testOnReturn")));
-	    logger.debug("redis.pool.maxTotal = {}", Integer.valueOf(bundle.getString("redis.pool.maxTotal")));
-	    logger.debug("redis.host = {}", bundle.getString("redis.host"));
-	    logger.debug("redis.port = {}", bundle.getString("redis.port"));
-	    logger.debug("redis.password = {}", bundle.getString("redis.password"));
-	    logger.debug("redis.default.db = {}", bundle.getString("redis.default.db"));
+	    logger.debug("redis.pool.maxActive = {}", jedisConfigBean.getMaxActive());
+	    logger.debug("redis.pool.maxIdle = {}", jedisConfigBean.getMaxIdle());
+	    logger.debug("redis.pool.minIdle = {}", jedisConfigBean.getMinIdle());
+	    logger.debug("redis.pool.maxWait = {}", jedisConfigBean.getMaxWait());
+	    logger.debug("redis.pool.testOnBorrow = {}", jedisConfigBean.isTestOnBorrow());
+	    logger.debug("redis.pool.testOnReturn = {}", jedisConfigBean.isTestOnReturn());
+	    logger.debug("redis.pool.maxTotal = {}", jedisConfigBean.getMaxTotal());
+	    logger.debug("redis.host = {}", jedisConfigBean.getHost());
+	    logger.debug("redis.port = {}", jedisConfigBean.getPort());
+	    logger.debug("redis.password = {}", jedisConfigBean.getPassword());
+	    logger.debug("redis.default.db = {}", jedisConfigBean.getDefaultDb());
 	    
 	    JedisPoolConfig config = new JedisPoolConfig();
 	    config.setBlockWhenExhausted(true);
-	    config.setMaxIdle(Integer.valueOf(bundle
-		    .getString("redis.pool.maxActive")));
-	    config.setMaxIdle(Integer.valueOf(bundle
-		    .getString("redis.pool.maxIdle")));
-	    config.setMaxWaitMillis(Long.valueOf(bundle.getString("redis.pool.maxWait")));
-	    config.setTestOnBorrow(Boolean.valueOf(bundle
-		    .getString("redis.pool.testOnBorrow")));
-	    config.setTestOnReturn(Boolean.valueOf(bundle
-		    .getString("redis.pool.testOnReturn")));
-	    config.setMaxTotal(Integer.valueOf(bundle
-		    .getString("redis.pool.maxTotal")));
-	    config.setTestOnBorrow(false);
-	    pool = new JedisPool(config, bundle.getString("redis.host"),
-		    Integer.valueOf(bundle.getString("redis.port")));
+	    config.setMaxIdle(jedisConfigBean.getMaxActive());
+	    config.setMaxIdle(jedisConfigBean.getMaxIdle());
+	    config.setMaxWaitMillis(jedisConfigBean.getMaxWait());
+	    config.setTestOnBorrow(jedisConfigBean.isTestOnBorrow());
+	    config.setTestOnReturn(jedisConfigBean.isTestOnReturn());
+	    config.setMaxTotal(jedisConfigBean.getMaxTotal());
+        config.setMinIdle(jedisConfigBean.getMinIdle());
+	    pool = new JedisPool(config, jedisConfigBean.getHost(), jedisConfigBean.getPort());
 	}
 	
 	
 	/**
 	 * 
 	 */
-	public JedisHelperImpl() {
-		initJedisPool();
+	public JedisHelperImpl(JedisConfigBean jedisConfigBean) {
+		initJedisPool(jedisConfigBean);
 	}
 	
 	private Integer getCurrentMode() {
@@ -162,8 +154,10 @@ public class JedisHelperImpl implements JedisCacheHelper {
 	@Override
 	public Jedis getNewJedis() {
 		Jedis jedis = pool.getResource();
-		jedis.auth(bundle.getString("redis.password"));
-		jedis.select(Integer.valueOf(bundle.getString("redis.default.db")));
+		if (null != jedisConfigBean.getPassword() && !"".equals(jedisConfigBean.getPassword())) {
+            jedis.auth(jedisConfigBean.getPassword());
+        }
+		jedis.select(jedisConfigBean.getDefaultDb());
 		return jedis;
 	}
 	/**

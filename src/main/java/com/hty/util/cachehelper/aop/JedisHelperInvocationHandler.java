@@ -4,6 +4,7 @@ package com.hty.util.cachehelper.aop;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 
+import com.hty.util.cachehelper.bean.JedisConfigBean;
 import com.hty.util.cachehelper.cacher.impl.JedisHelperImpl;
 
 /**
@@ -15,9 +16,9 @@ public class JedisHelperInvocationHandler implements InvocationHandler {
 
     private JedisHelperImpl targetObject;
 
-    public JedisHelperInvocationHandler() {
+    public JedisHelperInvocationHandler(JedisConfigBean jedisConfigBean) {
         if (null == targetObject) {
-            targetObject = new JedisHelperImpl();
+            targetObject = new JedisHelperImpl(jedisConfigBean);
         }
     }
 
