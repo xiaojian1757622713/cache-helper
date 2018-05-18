@@ -1,33 +1,15 @@
-/**  
-* @Title: JedisHelperImpl.java
-* @Package com.hty.util.jedis.impl
-* @Description: TODO
-* @author liugang  
-* @date 2017年3月13日 下午3:28:02 
-*/
 package com.hty.util.cachehelper.cacher.impl;
 
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.ResourceBundle;
-import java.util.Set;
-
+import com.hty.util.cachehelper.SerializeUtil;
 import com.hty.util.cachehelper.bean.JedisConfigBean;
+import com.hty.util.cachehelper.cacher.JedisCacheHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
-import redis.clients.jedis.Pipeline;
-import redis.clients.jedis.Transaction;
+import redis.clients.jedis.*;
 
-import com.hty.util.cachehelper.SerializeUtil;
-import com.hty.util.cachehelper.cacher.JedisCacheHelper;
+import java.util.*;
+import java.util.Map.Entry;
 
 /**
  * JedisHelperImpl使用有四种模式：<br>
@@ -815,13 +797,64 @@ public class JedisHelperImpl implements JedisCacheHelper {
 		Jedis jedis = getJedis();
 		Set<byte[]> bsset = jedis.sinter(keys);
 		closeIfNoCurrentJedis(jedis);
+		if (null == bsset)
+			return ret;
 		for(Iterator<byte[]> iterator = bsset.iterator(); iterator.hasNext();) {
 			T o = SerializeUtil.deserialize(iterator.next(), type);
 			ret.add(o);
 		}
 		return ret;
 	}
-	
+
+	public <T> Set<T> getDiffObjectSet(Class<T> type, byte[]... keys) {
+		if(null == keys || keys.length == 0)
+			return null;
+		Set<T> ret = new HashSet<T>();
+		Jedis jedis = getJedis();
+		Set<byte[]> bsset = jedis.sdiff(keys);
+		closeIfNoCurrentJedis(jedis);
+		if (null == bsset)
+			return ret;
+		for(Iterator<byte[]> iterator = bsset.iterator(); iterator.hasNext();) {
+			T o = SerializeUtil.deserialize(iterator.next(), type);
+			ret.add(o);
+		}
+		return ret;
+	}
+
+	public <T> Set<T> getUnionObjectSet(Class<T> type, byte[]... keys) {
+		if(null == keys || keys.length == 0)
+			return null;
+		Set<T> ret = new HashSet<T>();
+		Jedis jedis = getJedis();
+		Set<byte[]> bsset = jedis.sunion(keys);
+		closeIfNoCurrentJedis(jedis);
+		if (null == bsset)
+			return ret;
+		for(Iterator<byte[]> iterator = bsset.iterator(); iterator.hasNext();) {
+			T o = SerializeUtil.deserialize(iterator.next(), type);
+			ret.add(o);
+		}
+		return ret;
+	}
+
+	public int moveObjectSetMember(byte[] source, byte[] dest, Object member) {
+		if(null == source || source.length == 0 || null == dest || dest.length == 0 || null == member)
+			return 0;
+		Jedis jedis = getJedis();
+		long count = jedis.smove(source, dest, SerializeUtil.serialize(member));
+		closeIfNoCurrentJedis(jedis);
+		return Integer.valueOf("" + count);
+	}
+
+	public boolean isObjectSetMember(byte[] key, Object member) {
+		if(null == key || key.length == 0 || null == member)
+			return false;
+		Jedis jedis = getJedis();
+		boolean isMember = jedis.sismember(key, SerializeUtil.serialize(member));
+		closeIfNoCurrentJedis(jedis);
+		return isMember;
+	}
 	
 	
 	
@@ -886,6 +919,52 @@ public class JedisHelperImpl implements JedisCacheHelper {
 		closeIfNoCurrentJedis(jedis);
 		return bsset;
 	}
+
+
+	@Override
+	public Set<String> getDiffStringSet(String... keys) {
+		if(null == keys || keys.length == 0)
+			return null;
+		Jedis jedis = getJedis();
+		Set<String> bsset = jedis.sdiff(keys);
+		closeIfNoCurrentJedis(jedis);
+		return bsset;
+	}
+
+	@Override
+	public Set<String> getUnionObjectSet(String... keys) {
+		if(null == keys || keys.length == 0)
+			return null;
+		Jedis jedis = getJedis();
+		Set<String> bsset = jedis.sunion(keys);
+		closeIfNoCurrentJedis(jedis);
+		return bsset;
+	}
+
+
+	@Override
+	public int moveStringSetMember(String source, String dest, String member) {
+		if (null == source || null == dest || null == member)
+			return 0;
+		Jedis jedis = getJedis();
+		long count = jedis.smove(source, dest, member);
+		closeIfNoCurrentJedis(jedis);
+		return Integer.valueOf("" + count);
+	}
+
+
+	@Override
+	public boolean isStringSetMember(String key, String member) {
+		if (null == key || null == member)
+			return false;
+		Jedis jedis = getJedis();
+		boolean isMember = jedis.sismember(key, member);
+		closeIfNoCurrentJedis(jedis);
+		return isMember;
+	}
+
+
+
 
 	@Override
 	public boolean existsKey(String key) {
