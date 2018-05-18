@@ -218,8 +218,8 @@ public interface CacheHelper {
 	/**
 	 * 获得几个Object类型的集合的交集，并以指定的集合类型返回
 	 */
-	<T> Set<T> getInterObjectSet(Class<T> type, byte[]... keys) ;
-	
+	<T> Set<T> getInterObjectSet(Class<T> type, byte[]... keys);
+
 	
 	//////////////////////   String Set
 	

@@ -1,9 +1,9 @@
 package com.hty.util.cachehelper.cacher;
 
+import redis.clients.jedis.Jedis;
+
 import java.util.Map;
 import java.util.Set;
-
-import redis.clients.jedis.Jedis;
 
 /**
  * JedisHelper封装实现了Jedis常用的一些API，
@@ -65,6 +65,25 @@ public interface JedisCacheHelper extends CacheHelper {
 	 * 获得几个Object类型的集合的交集，并以指定的集合类型返回
 	 */
 	<T> Set<T> getInterObjectSet(Class<T> type, byte[]... keys) ;
+
+	/**
+	 * 获得几个Object类型的集合之间的差集，并以指定的集合类型返回
+	 */
+	<T> Set<T> getDiffObjectSet(Class<T> type, byte[]... keys);
+
+	/**
+	 * 获得几个Object类型的集合之间的并集，并以指定的集合类型返回
+	 */
+	<T> Set<T> getUnionObjectSet(Class<T> type, byte[]... keys);
+	/**
+	 * 获得几个Object类型的集合之间的并集，并以指定的集合类型返回
+	 */
+	int moveObjectSetMember(byte[] source, byte[] dest, Object member);
+
+	/**
+	 * 判断 member 元素是否集合 key 的成员。
+	 */
+	boolean isObjectSetMember(byte[] key, Object member);
 	
 	
 	//////////////////////   String Set
@@ -74,6 +93,22 @@ public interface JedisCacheHelper extends CacheHelper {
 	 * 获得几个String类型的集合的交集
 	 */
 	Set<String> getInterStringSet(String... key) ;
+	/**
+	 * 获得几个String类型的集合之间的差集
+	 */
+	Set<String> getDiffStringSet(String... keys);
+	/**
+	 * 获得几个String类型的集合之间的并集
+	 */
+	Set<String> getUnionObjectSet(String... keys);
+	/**
+	 * 获得几个Object类型的集合之间的并集，并以指定的集合类型返回
+	 */
+	int moveStringSetMember(String source, String dest, String member);
+	/**
+	 * 判断 member 元素是否集合 key 的成员。
+	 */
+	boolean isStringSetMember(String key, String member);
 	
 	///////////////////////////////////////////////////////////// SortedSet
 		
